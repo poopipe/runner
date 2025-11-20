@@ -3,7 +3,7 @@ name = "runner"
 version = "0.1.0"
 description = ""
 authors = [
-    {name = "poopipe",email = "69435015+poopipe@users.noreply.github.com"}
+    {name = "poopipe",email = "a@A.com"}
 ]
 readme = "README.md"
 requires-python = ">=3.12"
