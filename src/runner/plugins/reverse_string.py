@@ -1,6 +1,6 @@
-from runner.plugin_libs.types import PluginResult
+from runner.plugin_libs.types import PluginDictResult
 
-def plugin_main(s:str)->PluginResult:
-    l = "".join( list(s)[::-1] )
-    return PluginResult(__name__, {"_": l}) 
 
+def plugin_main(s: str) -> PluginDictResult:
+    l = "".join(list(s)[::-1])
+    return PluginDictResult(__name__, {"_": l})

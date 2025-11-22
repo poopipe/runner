@@ -1,7 +1,18 @@
-from runner.plugin_libs.types import PluginResult
+from multipledispatch import dispatch
 
-def plugin_main(data:PluginResult):
-    print("result_handler_main")
+from runner.plugin_libs.types import PluginDictResult, PluginMatResult, PluginResult
+
+
+@dispatch(PluginMatResult)
+def plugin_main(data: PluginMatResult):
+    print("result_handler mat")
     print(f"__{data.name}__")
-    for k, v in data.data.items(): 
+    print(data.data)
+
+
+@dispatch(PluginDictResult)
+def plugin_main(data: PluginDictResult):
+    print("result_handler dict")
+    print(f"__{data.name}__")
+    for k, v in data.data.items():
         print(f"{str(k).ljust(32)}: {str(v)}")

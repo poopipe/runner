@@ -1,51 +1,29 @@
-from importlib import import_module
-from types import ModuleType
-from typing import Any
+"""
+This thing runs plugin scripts in a sequence
+
+It has:
+    standardised result format plugin_libs.types.PluginResult
+    option to run plugins in parallel on content of a PluginResult
+
+It will have:
+    plugin api
+    it might have to get a ui and i dont think it can be a tui
+
+How I want it to work:
+    use a plugin to define initial input
+    while stilgotpluginstoprocess:
+        use a plugin to process input supplied by previous step
+    use a plugin to display / store output
+
+consider a node graph
+consider making this process image data
+can i opengl???
+
+"""
+
 from runner.libs.types import PluginError
 from runner.plugin_libs.types import PluginResult
-from itertools import chain
-
-
-def load_plugin(name) -> ModuleType:
-    mod = import_module(f"runner.plugins.{name}")
-    return mod
-
-
-def run_plugin(name, *args, **kwargs) -> PluginResult:
-    print(f"run plugin {name}")
-    plugin = load_plugin(name)
-    try:
-        result = plugin.plugin_main(*args, **kwargs)
-        return result
-
-    except Exception as e:
-        raise PluginError(e, plugin)
-
-
-def run_plugin_parallel(name, data, processes: int | None = None) -> PluginResult:
-    """run a plugin on a list of items, collate the results and return"""
-    from multiprocessing import Pool
-
-    print(f"run plugin {name}")
-    plugin = load_plugin(name)
-
-    try:
-        # async version
-        pool = Pool(processes=processes)
-        results = pool.map_async(plugin.plugin_main, data).get()
-        result_data = {results.index(x): x for x in results}
-
-        # unpack the data from our pool results into a standard PluginResult
-        data_values: list[Any] = [list(x.data.values()) for x in result_data.values()]
-        flattened_data_values = list(chain.from_iterable(data_values))
-        plugin_result_data = {
-            flattened_data_values.index(x): x for x in flattened_data_values
-        }
-
-        return PluginResult(plugin.__name__, plugin_result_data)
-
-    except Exception as e:
-        raise PluginError(e, plugin)
+from runner.libs.core import run_plugin
 
 
 def get_input_list() -> list[str]:
@@ -54,13 +32,11 @@ def get_input_list() -> list[str]:
 
 
 def main() -> None:
-
-    print("starting runner")
-    try:
-        result = run_plugin_parallel("reverse_string", get_input_list())
-        run_plugin("result_handler", result)
-    except PluginError as e:
-        print(f"Plugin has shit the bed:\n{e}")
+    result = run_plugin("reverse_string", get_input_list())
+    run_plugin("result_handler", result)
+    print("\n")
+    result = run_plugin("make_image")
+    run_plugin("result_handler", result)
 
 
 if __name__ == "__main__":
