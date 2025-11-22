@@ -11,7 +11,7 @@ It will have:
 
 How I want it to work:
     use a plugin to define initial input
-    while stilgotpluginstoprocess:
+    while stillgotpluginstoprocess:
         use a plugin to process input supplied by previous step
     use a plugin to display / store output
 

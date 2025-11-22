@@ -17,6 +17,11 @@ def load_plugin(name) -> ModuleType:
     """load a module from disk/env/whatever"""
     # TODO: this needs to support on disk locations
     #       and installed packages
+    #       it might just work if i handle paths
+    #       so - how do we handle needing numpy or other types for images
+    #       - what if i want to turn this into an opengl driven image processor but also
+    #       support lists of text or xml or some shit?
+
     mod = import_module(f"runner.plugins.{name}")
     return mod
 
@@ -30,17 +35,13 @@ def load_plugin(name) -> ModuleType:
 def run_plugin(name: str, input: PluginResult) -> PluginResult:
     """run this when input is a PluginResult"""
     plugin = load_plugin(name)
-    result = plugin.plugin_main(input)
-    return result
 
-    """
     try:
         result = plugin.plugin_main(input)
         return result
 
     except Exception as e:
         raise PluginError(e, plugin)
-    """
 
 
 @dispatch(str)
