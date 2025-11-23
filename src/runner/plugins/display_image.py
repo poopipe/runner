@@ -1,51 +1,137 @@
-import struct
 import moderngl
+import numpy as np
+
+from PIL import Image
 
 
-def plugin_main():
-    # TODO: this needs to take a PluginMatResult eventually
-    #
-    # TODO:
-    #       we want this to render the data found in the incoming PluginMatResult to an image/buffer
-    #       we also want a bunch of other things like this that take the incoming data and process it
-    #       i think i need to do this with compute shaders or something which will be a whole load of fun
-    #       i suspect that spinning up a new context every time is a shit idea but maybe it isn't
+class GLProcessor:
+    def __init__(self) -> None:
+        self.context: moderngl.Context = moderngl.create_context(standalone=True)
+        self.vertex_shader: str = self._vertex_shader()
+        self.fragment_shader: str = self._fragment_shader()
+        self.program: moderngl.Program = self.context.program(
+            self.vertex_shader, self.fragment_shader
+        )
+        self.vbo: moderngl.Buffer = self._vertex_buffer()
+        self.vao: moderngl.VertexArray = self._vertex_array()
+        self.fbo: moderngl.Framebuffer = self._frame_buffer()
 
-    gl_context = moderngl.create_context(standalone=True)
+        print(f"{type(self.fbo)}")
 
-    program = gl_context.program(
-        vertex_shader="""
+    def _vertex_shader(self) -> str:
+        s: str = """
         #version 330
-        //output values for shader - end up in buffer
-        out float value;
-        out float product;
 
-        void main(){
-            value = gl_VertexID;
-            product = gl_VertexID * gl_VertexID;
+        in vec2 in_vert;
+        in vec3 in_color;
+
+        out vec3 v_color;
+
+        void main() {
+            v_color = in_color;
+            gl_Position = vec4(in_vert, 0.0, 1.0);
         }
-        """,
-        # define which output varyings to capture in our buffer
-        varyings=("value", "product"),
-    )
+        """
+        return s
 
-    NUM_VERTICES = 10
+    def _fragment_shader(self) -> str:
+        s = """
+        #version 330
 
-    # create empty vertex array
-    vao = gl_context.vertex_array(program, [])
+        in vec3 v_color;
+        out vec3 f_color;
 
-    # create buffer with spaace for 20 32bit floats
-    buffer = gl_context.buffer(reserve=NUM_VERTICES * 8)
+        void main() {
+            f_color = v_color;
+        }
+        """
+        return s
 
-    # start a transforms with buffer as destination
-    vao.transform(buffer, vertices=NUM_VERTICES)
+    def _vertex_buffer(self) -> moderngl.Buffer:
+        x = np.linspace(-1.0, 1.0, 50)
+        y = np.random.rand(50) - 0.5
+        r = np.zeros(50)
+        g = np.ones(50)
+        b = np.zeros(50)
 
-    # unpack the 20 float values from the buffer (copy from gpu memory to system memory)
-    # reading from buffer will cause a sync (python program stalls until shader is done)
-    data = struct.unpack("20f", buffer.read())
-    for i in range(0, 20, 2):
-        print("value = {}, product = {}".format(*data[i : i + 2]))
+        vertices = np.dstack([x, y, r, g, b])
+        return self.context.buffer(vertices.astype("f4").tobytes())
+
+    def _vertex_array(self):
+        return self.context.vertex_array(self.program, self.vbo, "in_vert", "in_color")
+
+    def _frame_buffer(self) -> moderngl.Framebuffer:
+        return self.context.framebuffer(
+            color_attachments=[self.context.texture((512, 512), 3)]
+        )
+
+    def execute(self) -> None:
+        self.fbo.use()
+        self.fbo.clear(0.0, 0.0, 0.0, 1.0)
+        self.vao.render(moderngl.LINE_STRIP)
+
+    def show(self) -> None:
+        Image.frombytes(
+            "RGB",
+            self.fbo.size,
+            self.fbo.color_attachments[0].read(),
+            "raw",
+            "RGB",
+            0,
+            -1,
+        ).show()
 
 
-if __name__ == "__main__":
-    plugin_main()
+glp = GLProcessor()
+glp.execute()
+glp.show()
+'''
+ctx = moderngl.create_context(standalone=True)
+
+prog = ctx.program(
+    vertex_shader="""
+        #version 330
+
+        in vec2 in_vert;
+        in vec3 in_color;
+
+        out vec3 v_color;
+
+        void main() {
+            v_color = in_color;
+            gl_Position = vec4(in_vert, 0.0, 1.0);
+        }
+    """,
+    fragment_shader="""
+        #version 330
+
+        in vec3 v_color;
+
+        out vec3 f_color;
+
+        void main() {
+            f_color = v_color;
+        }
+    """,
+)
+
+x = np.linspace(-1.0, 1.0, 50)
+y = np.random.rand(50) - 0.5
+r = np.zeros(50)
+g = np.ones(50)
+b = np.zeros(50)
+
+vertices = np.dstack([x, y, r, g, b])
+
+vbo = ctx.buffer(vertices.astype("f4").tobytes())
+vao = ctx.vertex_array(prog, vbo, "in_vert", "in_color")
+
+fbo = ctx.framebuffer(color_attachments=[ctx.texture((512, 512), 3)])
+fbo.use()
+fbo.clear(0.0, 0.0, 0.0, 1.0)
+vao.render(moderngl.LINE_STRIP)
+
+Image.frombytes(
+    "RGB", fbo.size, fbo.color_attachments[0].read(), "raw", "RGB", 0, -1
+).show()
+'''
