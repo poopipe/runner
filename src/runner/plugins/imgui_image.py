@@ -1,70 +1,20 @@
 from pathlib import Path
-from dataclasses import dataclass, field
-from typing import Any
 
 from imgui_bundle import imgui
 
-from moderngl import (
-    CULL_FACE,
-    DEPTH_TEST,
-    Attribute,
-    Framebuffer,
-    Program,
-    Uniform,
-    Varying,
-)
+from moderngl import CULL_FACE, DEPTH_TEST
 from moderngl_window.context.base import WindowConfig
 from moderngl_window import geometry
 from moderngl_window.integrations.imgui_bundle import ModernglWindowRenderer
-from moderngl_window.opengl.vao import VAO
 
-from pyglm.glm import mat4, translate, perspective, radians, vec3, quat
+from pyglm.glm import mat4, translate, vec3, quat
 
-
-def get_program_uniforms(prog: Program) -> list[Uniform]:
-    """get uniforms from moderngl Program"""
-    return [prog.get(x, 0) for x in prog if isinstance(prog.get(x, 0), Uniform)]
-
-
-def get_program_varyings(prog: Program) -> list[Varying]:
-    """get uniforms from moderngl Program"""
-    return [prog.get(x, 0) for x in prog if isinstance(prog.get(x, 0), Varying)]
-
-
-def get_program_attributes(prog: Program) -> list[Attribute]:
-    """get uniforms from moderngl Program"""
-    return [prog.get(x, 0) for x in prog if isinstance(prog.get(x, 0), Attribute)]
-
-
-@dataclass()
-class NodeWindow:
-    """the individual rendery windows"""
-
-    name: str
-    parameters: dict[str, Any]
-    fbo: Framebuffer
-    vao: VAO
-    prog: Program
-    prog_uniforms: list[Uniform] = field(default_factory=list)
-    prog_varyings: list[Varying] = field(default_factory=list)
-    prog_attributes: list[Attribute] = field(default_factory=list)
-
-    def __post_init__(self) -> None:
-
-        # These can be set here - that's just initialisation
-        self.prog["m_camera"].write(mat4())
-        self.prog["m_proj"].write(perspective(radians(75), 1.0, 1, 100))
-
-        # set uniforms etc. we do it here in case we need to override the others
-        for key, value in self.parameters.items():
-            self.prog[key].value = value
-
-        self.prog_uniforms = get_program_uniforms(self.prog)
-        self.prog_varyings = get_program_varyings(self.prog)
-        self.prog_attributes = get_program_attributes(self.prog)
+from runner.libs_gl.types import NodeWindow
 
 
 class MainWindow(WindowConfig):
+    """top level app window"""
+
     gl_version = (3, 3)
     title = "imgui Integration"
     resource_dir = (Path(__file__).parent).resolve()
@@ -76,30 +26,25 @@ class MainWindow(WindowConfig):
         self.wnd.ctx.error
         self.imgui = ModernglWindowRenderer(self.wnd)
 
-        self.node_windows: list[NodeWindow] = [
+        self.node_windows: list[NodeWindow] = []
+        # register framebuffer color textures with imgui
+        for node_window in self.node_windows:
+            self.imgui.register_texture(node_window.fbo.color_attachments[0])
+
+    def add_node_window(self, name: str):
+        """adds a node window - no idea why but this can't be called externally to the window"""
+        self.node_windows.append(
             NodeWindow(
-                "one",
+                name,
                 {"color": (1.0, 0.0, 0.0, 1.0)},
                 self.ctx.framebuffer(
-                    color_attachments=self.ctx.texture((512, 512), 4),
-                    depth_attachment=self.ctx.depth_texture((512, 512)),
+                    color_attachments=self.ctx.texture((256, 256), 4),
+                    depth_attachment=self.ctx.depth_texture((256, 256)),
                 ),
                 geometry.cube(size=(2, 2, 2)),
                 self.load_program("cube_simple.glsl"),
-            ),
-            NodeWindow(
-                "two",
-                {"color": (0.0, 1.0, 0.0, 1.0)},
-                self.ctx.framebuffer(
-                    color_attachments=self.ctx.texture((512, 512), 4),
-                    depth_attachment=self.ctx.depth_texture((512, 512)),
-                ),
-                geometry.quad_2d(size=(2, 2)),
-                self.load_program("cube_simple2.glsl"),
-            ),
-        ]
-
-        # register framebuffer color textures with imgui
+            )
+        )
         for node_window in self.node_windows:
             self.imgui.register_texture(node_window.fbo.color_attachments[0])
 
@@ -114,10 +59,8 @@ class MainWindow(WindowConfig):
             # Render cube to offscreen texture / fbo
             node_window.fbo.use()
             node_window.fbo.clear()
-
             node_window.prog["m_model"].write(model)
             node_window.vao.render(node_window.prog)
-            # self.cube.render(self.prog)
 
         # Render UI to screen
         self.wnd.use()
@@ -138,6 +81,17 @@ class MainWindow(WindowConfig):
                 imgui.end_menu()
             imgui.end_main_menu_bar()
 
+        # toolbox
+        imgui.set_next_window_pos((0, 0))
+        imgui.set_next_window_size((256, 1024))
+        imgui.begin("toolbox", False)
+        imgui.text("toolbox")
+
+        if imgui.button("add node", (240, 32)):
+            self.add_node_window("ass")
+        imgui.end()
+        #
+
         # imgui.show_demo_window()
         """
         imgui.begin("Custom window", True)
@@ -153,7 +107,6 @@ class MainWindow(WindowConfig):
             imgui.begin(node_window.name, True)
             # Create an image control by passing in the OpenGL texture ID (glo)
             # and pass in the image size as well.
-            # The texture needs to he registered using register_texture for this to work
             imgui.image(node_window.fbo.color_attachments[0].glo, node_window.fbo.size)
             imgui.end()
 
