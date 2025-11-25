@@ -64,7 +64,7 @@ class NodeWindow:
         self.prog_attributes = get_program_attributes(self.prog)
 
 
-class WindowEvents(WindowConfig):
+class MainWindow(WindowConfig):
     gl_version = (3, 3)
     title = "imgui Integration"
     resource_dir = (Path(__file__).parent).resolve()
@@ -102,11 +102,8 @@ class WindowEvents(WindowConfig):
         # register framebuffer color textures with imgui
         for node_window in self.node_windows:
             self.imgui.register_texture(node_window.fbo.color_attachments[0])
-            print([x.name for x in node_window.prog_uniforms])
-            print([x.name for x in node_window.prog_varyings])
-            print([x.name for x in node_window.prog_attributes])
 
-    def on_render(self, time: float, frametime: float):
+    def on_render(self, time: float, frame_time: float):
         # Rotate/move cube
         rotation = mat4(quat(vec3(time, time, time)))
         translation = translate(vec3(0.0, 0.0, -3.5))
@@ -124,9 +121,9 @@ class WindowEvents(WindowConfig):
 
         # Render UI to screen
         self.wnd.use()
-        self.render_ui()
+        self.render_ui(frame_time)
 
-    def render_ui(self):
+    def render_ui(self, frame_time: float):
         """Render the UI"""
         imgui.new_frame()
         if imgui.begin_main_menu_bar():
@@ -148,6 +145,8 @@ class WindowEvents(WindowConfig):
         imgui.text_colored(imgui.ImVec4(0.2, 1.0, 0.0, 1.0), "Eggs")
         imgui.end()
         """
+
+        imgui.text(f"frame time: {frame_time:.3f}")
 
         for node_window in self.node_windows:
             # Create window with the framebuffer image
@@ -187,4 +186,4 @@ class WindowEvents(WindowConfig):
 
 
 if __name__ == "__main__":
-    WindowEvents.run()
+    MainWindow.run()
