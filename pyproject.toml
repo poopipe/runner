@@ -9,8 +9,9 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "numpy (>=2.3.5,<3.0.0)",
-    "multidispatch (>=0.2,<0.3)",
-    "moderngl (>=5.12.0,<6.0.0)"
+    "multipledispatch (>=0.2,<0.3)",
+    "moderngl (>=5.12.0,<6.0.0)",
+    "imgui-bundle (==1.6.3)"
 ]
 
 [tool.poetry]
