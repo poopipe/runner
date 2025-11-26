@@ -21,6 +21,7 @@ can i opengl???
 
 """
 
+from runner import PLUGIN_PATH
 from runner.libs.types import PluginError
 from runner.plugin_libs.types import PluginResult
 from runner.libs.core import run_plugin
@@ -40,4 +41,9 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+
+    from runner.libs_ui import core
+
+    core.AppWindow.run()
+
+    # main()

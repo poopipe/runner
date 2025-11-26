@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+from pathlib import Path
 from types import ModuleType
 
 
@@ -21,3 +23,10 @@ class PluginError(Exception):
 
     def __str__(self):
         return f"{self.plugin.__name__}: {self.message}"
+
+
+@dataclass
+class Plugin:
+    name: str
+    external: bool
+    path: Path

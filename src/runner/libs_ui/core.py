@@ -1,11 +1,14 @@
 from pathlib import Path
+from re import T
 from imgui_bundle import imgui
 from moderngl import CULL_FACE, DEPTH_TEST
 
-from moderngl import Context
 from moderngl_window import create_window_config_instance, run_window_config_instance
 from moderngl_window.context.base.window import WindowConfig
 from moderngl_window.integrations.imgui_bundle import ModernglWindowRenderer
+from numpy import core
+
+from runner.libs.utils import get_plugins
 
 
 class AppWindow(WindowConfig):
@@ -43,6 +46,54 @@ class AppWindow(WindowConfig):
                 imgui.end_menu()
             imgui.end_main_menu_bar()
 
+        if imgui.tree_node("tree##1"):
+            # TODO:
+            #       we need a library pallette that lists plugin files
+            #       a workspace that shows each plugin selected, in the order they were added
+            #       a button that runs the plugins in sequencee, passing data from previous to next
+            #       Things to consider:
+            #           input/output types - will need to find this out from  the plugin
+            #           start and end nodes probably want to be templated based on job type
+            #           distinction between image and data nodes (probably - could just be the input/output types)
+            #       Later:
+            #           make it a node graph (maybe, arguably user can just pack and unpack data in the plugins)
+
+            plugins = get_plugins()
+            internal_plugins = [x for x in plugins if x.external == False]
+            external_plugins = [x for x in plugins if x.external == True]
+
+            if imgui.tree_node("builtins"):
+                for plugin in internal_plugins:
+                    node_flags = (
+                        imgui.TreeNodeFlags_.span_avail_width.value
+                        | imgui.TreeNodeFlags_.leaf.value
+                    )
+                    imgui.tree_node_ex(
+                        f"{plugin.name}",
+                        node_flags,
+                        f"node {plugin.name}",
+                    )
+                    imgui.tree_pop()
+                imgui.tree_pop()
+                imgui.spacing()
+
+            if imgui.tree_node("user"):
+                for plugin in external_plugins:
+                    node_flags = (
+                        imgui.TreeNodeFlags_.span_avail_width.value
+                        | imgui.TreeNodeFlags_.leaf.value
+                    )
+                    imgui.tree_node_ex(
+                        f"{plugin.name}",
+                        node_flags,
+                        f"node {plugin.name}",
+                    )
+                    imgui.tree_pop()
+                imgui.tree_pop()
+                imgui.spacing()
+
+            imgui.tree_pop()
+
         imgui.render()
         self.imgui.render(imgui.get_draw_data())
 
@@ -76,5 +127,5 @@ if __name__ == "__main__":
     # poking them from the outside goes
     # .run() is a blocking call so we can't touch it until it stops
     # so all manipulation has to occur within the window class
-
-    AppWindow.run()
+    pass
+    # AppWindow.run()
