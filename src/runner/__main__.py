@@ -22,9 +22,8 @@ can i opengl???
 """
 
 from runner import PLUGIN_PATH
-from runner.libs.types import PluginError
 from runner.plugin_libs.types import PluginResult
-from runner.libs.core import run_plugin
+from runner.libs.core import PluginError, run_plugin
 
 
 def get_input_list() -> list[str]:
@@ -34,9 +33,6 @@ def get_input_list() -> list[str]:
 
 def main() -> None:
     result = run_plugin("reverse_string", get_input_list())
-    run_plugin("result_handler", result)
-    print("\n")
-    result = run_plugin("make_image")
     run_plugin("result_handler", result)
 
 

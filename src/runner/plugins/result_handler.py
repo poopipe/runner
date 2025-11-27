@@ -4,14 +4,14 @@ from runner.plugin_libs.types import PluginDictResult, PluginMatResult, PluginRe
 
 
 @dispatch(PluginMatResult)
-def plugin_main(data: PluginMatResult):
+def plugin_main(data: PluginMatResult) -> None:
     print("result_handler mat")
     print(f"__{data.name}__")
     print(data.data)
 
 
 @dispatch(PluginDictResult)
-def plugin_main(data: PluginDictResult):
+def plugin_main(data: PluginDictResult) -> None:
     print("result_handler dict")
     print(f"__{data.name}__")
     for k, v in data.data.items():

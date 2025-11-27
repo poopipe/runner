@@ -23,3 +23,10 @@ class PluginMatResult(PluginResult):
     """result class for numpy ndarray data"""
 
     data: ndarray
+
+
+@dataclass()
+class PluginListResult(PluginResult):
+    """result class for numpy ndarray data"""
+
+    data: list[Any]
